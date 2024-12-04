@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use PaginationLibrary\Pagination;
 
 class MasterProductController extends Controller
 {
@@ -14,12 +15,27 @@ class MasterProductController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index()
+    public function index(Request $request)
     {
-        $products = Product::all();  // Mengambil semua data produk
+        $totalItems = Product::count(); // Menghitung total produk
+        $itemsPerPage = $request->query('items_per_page', 10); // Default 10 item per halaman
+        $currentPage = $request->query('page', 1); // Halaman saat ini (default halaman 1)
+
+        // Inisialisasi Pagination library Tsany
+        $pagination = new Pagination($totalItems, $itemsPerPage, $currentPage);
+
+        // Ambil produk berdasarkan paginasi
+        $products = Product::offset($pagination->getOffset())
+            ->limit($pagination->getLimit())
+            ->get();
+
+        // Informasi paginasi
+        $paginationInfo = $pagination->getPaginationInfo();
+
         return response()->json([
             'success' => true,
-            'data' => $products
+            'data' => $products,
+            'pagination' => $paginationInfo,
         ], 200);
     }
 
